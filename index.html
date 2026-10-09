@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CityPulse AI — Smart City Exploration & Intelligence Platform</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            navy: {
+              950: '#070a12',
+              900: '#0b0f19',
+              850: '#0f172a',
+              800: '#151e33',
+              700: '#1e293b',
+              600: '#334155',
+            },
+            cyan: {
+              DEFAULT: '#06b6d4',
+              glow: '#22d3ee',
+            },
+            teal: {
+              DEFAULT: '#14b8a6',
+              glow: '#2dd4bf',
+            },
+            violet: {
+              DEFAULT: '#8b5cf6',
+              glow: '#a855f7',
+            }
+          },
+          boxShadow: {
+            'glow-cyan': '0 0 20px -3px rgba(6, 182, 212, 0.35)',
+            'glow-teal': '0 0 20px -3px rgba(20, 184, 166, 0.35)',
+            'glow-violet': '0 0 20px -3px rgba(139, 92, 246, 0.35)',
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .leaflet-popup-content-wrapper {
+      background: #0f172a !important;
+      color: #f1f5f9 !important;
+      border: 1px solid rgba(6, 182, 212, 0.3) !important;
+      border-radius: 0.75rem !important;
+    }
+    .leaflet-popup-tip { background: #0f172a !important; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-navy-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyan/30 selection:text-cyan-glow">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 border-b border-slate-800 bg-navy-950/85 backdrop-blur-md px-4 lg:px-8 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-cyan via-teal to-violet p-0.5 flex items-center justify-center shadow-glow-cyan">
+        <div class="h-full w-full bg-navy-950 rounded-[10px] flex items-center justify-center">
+          <i data-lucide="sparkles" class="w-4 h-4 text-cyan-glow"></i>
+        </div>
+      </div>
+      <div>
+        <div class="text-base font-extrabold text-white flex items-center gap-1.5">
+          CityPulse <span class="text-cyan font-mono text-xs uppercase px-1 py-0.5 rounded bg-cyan/15 border border-cyan/30">AI</span>
+        </div>
+        <p class="text-[10px] text-slate-400">Pune Urban Intelligence MVP</p>
+      </div>
+    </div>
+
+    <!-- Center Navigation Tabs -->
+    <nav class="hidden md:flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-xl p-1 text-xs font-semibold">
+      <button onclick="setTab('overview')" id="tab-btn-overview" class="tab-btn px-3 py-1.5 rounded-lg bg-cyan text-navy-950">Overview</button>
+      <button onclick="setTab('explore')" id="tab-btn-explore" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">Explore City</button>
+      <button onclick="setTab('safety')" id="tab-btn-safety" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">Safety Intelligence</button>
+      <button onclick="setTab('culture')" id="tab-btn-culture" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">History & Culture</button>
+      <button onclick="setTab('compare')" id="tab-btn-compare" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">Compare Places</button>
+      <button onclick="setTab('reports')" id="tab-btn-reports" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">Civic Reports</button>
+    </nav>
+
+    <!-- Header Actions -->
+    <div class="flex items-center gap-2">
+      <span class="hidden sm:inline-block px-2.5 py-1 rounded-xl border border-cyan/30 bg-cyan/10 text-cyan-glow text-[11px] font-mono">
+        DEMO MODE (OFFLINE READY)
+      </span>
+      <button onclick="toggleCopilot(true)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan to-teal text-navy-950 font-bold text-xs shadow-glow-cyan">
+        <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+        <span>AI Copilot</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- TAB 1: OVERVIEW -->
+    <section id="tab-overview" class="tab-pane space-y-6">
+      <div class="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-r from-navy-950 via-navy-850 to-navy-900 p-6 md:p-8 shadow-2xl">
+        <div class="max-w-2xl space-y-3">
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan/10 border border-cyan/30 text-xs font-semibold text-cyan-glow">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>Real-time Pune Urban Pulse Telemetry</span>
+          </div>
+          <h1 class="text-3xl sm:text-4xl font-extrabold text-white">
+            Smart City Exploration with <span class="text-cyan-glow">CityPulse AI</span>
+          </h1>
+          <p class="text-sm text-slate-300">
+            Discover verified heritage, student cafes, reported road hazards, and multi-factor neighborhood comparisons in central Pune.
+          </p>
+          <div class="flex flex-wrap gap-2 pt-2">
+            <button onclick="setTab('explore')" class="px-4 py-2 rounded-xl bg-cyan text-navy-950 font-bold text-xs shadow-glow-cyan">Explore Places</button>
+            <button onclick="setTab('safety')" class="px-4 py-2 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 font-bold text-xs">Safety Dashboard</button>
+            <button onclick="setTab('compare')" class="px-4 py-2 rounded-xl border border-violet/40 bg-violet/10 text-violet-300 font-bold text-xs">Compare Places</button>
+            <button onclick="setTab('reports')" class="px-4 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-200 font-bold text-xs">Report Civic Issue</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Metrics -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+        <div class="rounded-xl border border-slate-800 bg-navy-850 p-4">
+          <div class="text-slate-400 font-medium">Curated Landmarks</div>
+          <div class="text-2xl font-extrabold text-white mt-1">14 Spots</div>
+          <div class="text-cyan text-[11px] mt-0.5">Heritage, Food, Parks</div>
+        </div>
+        <div class="rounded-xl border border-slate-800 bg-navy-850 p-4">
+          <div class="text-slate-400 font-medium">Reported Civic Alerts</div>
+          <div class="text-2xl font-extrabold text-amber-300 mt-1">6 Incidents</div>
+          <div class="text-amber-400/80 text-[11px] mt-0.5">3 Verified • 2 Review</div>
+        </div>
+        <div class="rounded-xl border border-slate-800 bg-navy-850 p-4">
+          <div class="text-slate-400 font-medium">Live Pune Weather</div>
+          <div class="text-2xl font-extrabold text-white mt-1">28.5°C</div>
+          <div class="text-teal text-[11px] mt-0.5">Open-Meteo Satellite</div>
+        </div>
+        <div class="rounded-xl border border-slate-800 bg-navy-850 p-4">
+          <div class="text-slate-400 font-medium">Traffic Congestion</div>
+          <div class="text-2xl font-extrabold text-white mt-1">46%</div>
+          <div class="text-violet-300 text-[11px] mt-0.5">Moderate Evening Flow</div>
+        </div>
+      </div>
+
+      <!-- Overview Interactive Map -->
+      <div class="rounded-2xl border border-slate-800 bg-navy-850 p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="font-bold text-base text-white flex items-center gap-2">
+            <i data-lucide="map-pin" class="w-4 h-4 text-cyan"></i>
+            <span>Interactive Pune Telemetry Map</span>
+          </h2>
+          <span class="text-xs text-slate-400">Click markers to inspect details</span>
+        </div>
+        <div id="overview-map" class="h-96 w-full rounded-xl border border-slate-800"></div>
+      </div>
+    </section>
+
+    <!-- TAB 2: EXPLORE -->
+    <section id="tab-explore" class="tab-pane hidden space-y-6">
+      <div class="rounded-2xl border border-slate-800 bg-navy-850 p-4 space-y-3">
+        <div class="flex flex-col md:flex-row gap-3 items-center justify-between">
+          <input type="text" id="explore-search" oninput="filterExplorePlaces()" placeholder="Search attractions, misal pav, Irani cafes, gardens..." class="w-full bg-slate-900 border border-slate-750 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan" />
+          <div class="flex items-center gap-2 text-xs">
+            <button onclick="setExploreCategory('All')" class="cat-pill px-3 py-1.5 rounded-lg bg-cyan text-navy-950 font-bold">All</button>
+            <button onclick="setExploreCategory('Attractions')" class="cat-pill px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">Attractions</button>
+            <button onclick="setExploreCategory('Restaurants')" class="cat-pill px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">Food</button>
+            <button onclick="setExploreCategory('Parks')" class="cat-pill px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">Parks</button>
+          </div>
+        </div>
+      </div>
+      <div id="places-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- TAB 3: SAFETY INTELLIGENCE -->
+    <section id="tab-safety" class="tab-pane hidden space-y-6">
+      <div class="rounded-2xl border border-amber-500/40 bg-navy-950 p-4">
+        <div class="flex items-start gap-3 text-xs text-slate-300 leading-relaxed">
+          <i data-lucide="info" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+          <div>
+            <strong class="text-amber-300">Responsible AI Notice:</strong> 
+            Counts represent citizen-reported incidents only, not comprehensive crime tallies. 
+            Reporting bias exists. Route recommendations do not guarantee personal safety.
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-7">
+          <div id="safety-map" class="h-[460px] w-full rounded-2xl border border-slate-800"></div>
+        </div>
+        <div class="lg:col-span-5 space-y-3" id="safety-reports-list"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: CULTURE & TRAILS -->
+    <section id="tab-culture" class="tab-pane hidden space-y-6">
+      <div class="rounded-2xl border border-violet/30 bg-gradient-to-r from-navy-950 to-navy-850 p-6">
+        <h2 class="text-xl font-bold text-white mb-2">Old Pune Peshwa Heritage Trail</h2>
+        <p class="text-xs text-slate-300">Follow the multi-stop walking route connecting Shaniwar Wada, Lal Mahal, Kasba Ganpati, and Vishrambaug Wada.</p>
+      </div>
+      <div id="culture-map" class="h-96 w-full rounded-2xl border border-slate-800"></div>
+    </section>
+
+    <!-- TAB 5: COMPARE PLACES -->
+    <section id="tab-compare" class="tab-pane hidden space-y-6">
+      <div class="rounded-2xl border border-slate-800 bg-navy-850 p-6 space-y-4">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="scale" class="w-5 h-5 text-cyan"></i>
+          <span>Multi-Criteria Decision Matrix</span>
+        </h2>
+        <p class="text-xs text-slate-400">Comparing Shaniwar Wada, Cafe Vaishali, and Vohuman Cafe with transparent weighting.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left">
+            <thead class="border-b border-slate-800 text-slate-400 uppercase">
+              <tr>
+                <th class="py-2.5">Attribute</th>
+                <th class="py-2.5 text-cyan-glow">Shaniwar Wada</th>
+                <th class="py-2.5 text-cyan-glow">Cafe Vaishali</th>
+                <th class="py-2.5 text-cyan-glow">Vohuman Cafe</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800 text-slate-300">
+              <tr>
+                <td class="py-2.5 font-bold">Category</td>
+                <td>Attraction / Fort</td>
+                <td>Restaurant</td>
+                <td>Irani Cafe</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 font-bold">Rating</td>
+                <td class="text-amber-400 font-bold">★ 4.5</td>
+                <td class="text-amber-400 font-bold">★ 4.5</td>
+                <td class="text-amber-400 font-bold">★ 4.6</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 font-bold">Price Level</td>
+                <td>$ (INR 25)</td>
+                <td>$$ (INR 150-300)</td>
+                <td>$ (INR 80-150)</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 font-bold">Accessibility</td>
+                <td>✕ Historical stairs</td>
+                <td>✓ Wheelchair accessible</td>
+                <td>✓ Wheelchair accessible</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 font-bold">Cleanliness</td>
+                <td><span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">Insufficient Sensor Data</span></td>
+                <td><span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">Insufficient Sensor Data</span></td>
+                <td><span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">Insufficient Sensor Data</span></td>
+              </tr>
+              <tr class="font-extrabold text-cyan-glow bg-cyan/5">
+                <td class="py-3">Weighted Match Score</td>
+                <td class="py-3">89.2 / 100</td>
+                <td class="py-3">91.4 / 100 (Best Match)</td>
+                <td class="py-3">90.8 / 100</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: REPORTS -->
+    <section id="tab-reports" class="tab-pane hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-5 rounded-2xl border border-slate-800 bg-navy-850 p-5 space-y-3">
+          <h2 class="font-bold text-base text-white pb-2 border-b border-slate-800 flex items-center gap-2">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
+            <span>Submit Issue Report</span>
+          </h2>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Title</label>
+            <input type="text" id="rep-title" placeholder="e.g. Deep Pothole cluster near bus stop" class="w-full bg-slate-900 border border-slate-750 rounded-xl px-3 py-2 text-xs text-white" />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Category</label>
+              <select id="rep-cat" class="w-full bg-slate-900 border border-slate-750 rounded-xl px-3 py-2 text-xs text-white">
+                <option value="road_hazard">Road Hazard</option>
+                <option value="lighting">Poor Lighting</option>
+                <option value="flooding">Flooding</option>
+                <option value="traffic_outage">Signal Outage</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Severity</label>
+              <select id="rep-sev" class="w-full bg-slate-900 border border-slate-750 rounded-xl px-3 py-2 text-xs text-white">
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Description</label>
+            <textarea id="rep-desc" rows="3" placeholder="Explain the hazard details..." class="w-full bg-slate-900 border border-slate-750 rounded-xl px-3 py-2 text-xs text-white"></textarea>
+          </div>
+          <button onclick="submitDemoReport()" class="w-full py-2.5 rounded-xl bg-cyan text-navy-950 font-bold text-xs shadow-glow-cyan">Submit Civic Report</button>
+        </div>
+        <div class="lg:col-span-7 space-y-3" id="all-reports-container"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- AI Copilot Modal -->
+  <div id="copilot-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-md">
+    <div class="relative w-full max-w-xl h-[520px] rounded-2xl border border-violet/40 bg-navy-950 flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-3.5 border-b border-slate-800 bg-slate-900/70 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="bot" class="w-4 h-4 text-violet-glow"></i>
+          <span class="font-bold text-sm text-white">CityPulse Copilot AI</span>
+        </div>
+        <button onclick="toggleCopilot(false)" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div id="copilot-chat" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs">
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-200">
+          👋 Hi! I'm <strong>CityPulse Copilot</strong>. Ask me to plan a heritage tour, find budget food, or summarize reported road hazards in Pune.
+        </div>
+      </div>
+      <div class="p-3 border-t border-slate-800 bg-slate-900/60 flex gap-2">
+        <input type="text" id="copilot-input" onkeydown="if(event.key==='Enter') sendCopilotMsg()" placeholder="Ask Copilot..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white" />
+        <button onclick="sendCopilotMsg()" class="px-4 py-2 bg-cyan text-navy-950 font-bold rounded-xl text-xs">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client Script for Full Functionality -->
+  <script>
+    const SEED_PLACES = [
+      { id: "pune-shaniwar-wada", name: "Shaniwar Wada", category: "Attractions", neighborhood: "Bajirao Road", lat: 18.5196, lng: 73.8553, rating: 4.5, price: "$", img: "https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=600&q=80", desc: "18th-century Maratha fort seat of the Peshwas with Dilli Darwaza and fountain foundations." },
+      { id: "pune-aga-khan-palace", name: "Aga Khan Palace", category: "Attractions", neighborhood: "Kalyani Nagar", lat: 18.5529, lng: 73.9015, rating: 4.6, price: "$", img: "https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=600&q=80", desc: "Italian-arched memorial palace where Mahatma Gandhi and Kasturba Gandhi were interned in 1942." },
+      { id: "pune-vaishali", name: "Cafe Vaishali", category: "Restaurants", neighborhood: "FC Road", lat: 18.5204, lng: 73.8413, rating: 4.5, price: "$$", img: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&q=80", desc: "Legendary student hub famous for Mysore Masala Dosa, Filter Coffee, and courtyard dining." },
+      { id: "pune-vohuman-cafe", name: "Vohuman Cafe", category: "Restaurants", neighborhood: "Sassoon Road", lat: 18.5298, lng: 73.8741, rating: 4.6, price: "$", img: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=600&q=80", desc: "Historic Irani cafe famous for fluffy double-cheese omelettes, brun maska, and fragrant chai." },
+      { id: "pune-kata-kirr", name: "Kata Kirr", category: "Restaurants", neighborhood: "Karve Nagar", lat: 18.5085, lng: 73.8340, rating: 4.7, price: "$", img: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80", desc: "Pune's celebrated spicy Kolhapuri-style Misal Pav served with crunchy farsan and buttermilk." },
+      { id: "pune-pula-deshpande", name: "Pu La Deshpande Garden", category: "Parks", neighborhood: "Sinhagad Road", lat: 18.4941, lng: 73.8344, rating: 4.6, price: "$", img: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80", desc: "Okayama Japanese friendship garden with artificial canals, arched bridges, and serene lawns." }
+    ];
+
+    const SEED_REPORTS = [
+      { id: "rep-1", title: "Pothole Cluster near Swargate Underpass", category: "road_hazard", severity: "high", neighborhood: "Swargate", lat: 18.5020, lng: 73.8580, status: "under_review", desc: "Deep asphalt surface degradation on descent ramp towards Shivaji Road." },
+      { id: "rep-2", title: "Inoperative Street Lights (300m Stretch)", category: "lighting", severity: "medium", neighborhood: "Koregaon Park", lat: 18.5398, lng: 73.8992, status: "verified", desc: "Broken sodium lamps between Lane 5 and Lane 7 causing night visibility drop." },
+      { id: "rep-3", title: "Waterlogging After Rain at Dengle Bridge", category: "flooding", severity: "high", neighborhood: "Kasba Peth", lat: 18.5225, lng: 73.8568, status: "verified", desc: "Debris blocking storm runoff resulting in 8-inch standing water." }
+    ];
+
+    let currentExploreCategory = 'All';
+    let overviewMap, safetyMap, cultureMap;
+
+    function initMaps() {
+      if (document.getElementById('overview-map') && !overviewMap) {
+        overviewMap = L.map('overview-map').setView([18.5204, 73.8567], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(overviewMap);
+        SEED_PLACES.forEach(p => {
+          L.marker([p.lat, p.lng]).addTo(overviewMap).bindPopup(`<b>${p.name}</b><br/>${p.category} • ★ ${p.rating}`);
+        });
+        SEED_REPORTS.forEach(r => {
+          L.circleMarker([r.lat, r.lng], { color: '#f59e0b', radius: 8 }).addTo(overviewMap).bindPopup(`<b>⚠️ ${r.title}</b><br/>Severity: ${r.severity}`);
+        });
+      }
+    }
+
+    function setTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-cyan', 'text-navy-950');
+        btn.classList.add('text-slate-400');
+      });
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById('tab-btn-' + tabId);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-cyan', 'text-navy-950');
+        activeBtn.classList.remove('text-slate-400');
+      }
+
+      if (tabId === 'overview') {
+        setTimeout(() => { if (overviewMap) overviewMap.invalidateSize(); else initMaps(); }, 100);
+      } else if (tabId === 'safety') {
+        setTimeout(() => {
+          if (!safetyMap) {
+            safetyMap = L.map('safety-map').setView([18.5204, 73.8567], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(safetyMap);
+            SEED_REPORTS.forEach(r => {
+              L.circleMarker([r.lat, r.lng], { color: '#ef4444', radius: 9, fillColor: '#ef4444', fillOpacity: 0.7 })
+                .addTo(safetyMap)
+                .bindPopup(`<b>⚠️ ${r.title}</b><br/>${r.desc}`);
+            });
+          }
+          safetyMap.invalidateSize();
+        }, 100);
+      } else if (tabId === 'culture') {
+        setTimeout(() => {
+          if (!cultureMap) {
+            cultureMap = L.map('culture-map').setView([18.5196, 73.8553], 15);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(cultureMap);
+            const trailCoords = [
+              [18.5196, 73.8553],
+              [18.5186, 73.8566],
+              [18.5201, 73.8576],
+              [18.5150, 73.8525]
+            ];
+            L.polyline(trailCoords, { color: '#8b5cf6', weight: 4, dashArray: '6, 6' }).addTo(cultureMap);
+            trailCoords.forEach((c, i) => L.marker(c).addTo(cultureMap).bindPopup(`Trail Stop ${i+1}`));
+          }
+          cultureMap.invalidateSize();
+        }, 100);
+      }
+    }
+
+    function renderExplorePlaces() {
+      const grid = document.getElementById('places-grid');
+      grid.innerHTML = '';
+      const q = document.getElementById('explore-search').value.toLowerCase();
+      SEED_PLACES.filter(p => {
+        if (currentExploreCategory !== 'All' && p.category !== currentExploreCategory) return false;
+        if (q && !p.name.toLowerCase().includes(q) && !p.desc.toLowerCase().includes(q)) return false;
+        return true;
+      }).forEach(p => {
+        grid.innerHTML += `
+          <div class="rounded-2xl border border-slate-800 bg-navy-850 overflow-hidden shadow-md">
+            <img src="${p.img}" class="h-40 w-full object-cover" />
+            <div class="p-4 space-y-2">
+              <div class="flex justify-between items-center">
+                <h3 class="font-bold text-sm text-white">${p.name}</h3>
+                <span class="text-amber-400 font-bold text-xs">★ ${p.rating}</span>
+              </div>
+              <p class="text-xs text-slate-400 line-clamp-2">${p.desc}</p>
+              <div class="text-[11px] text-slate-400 pt-1 flex justify-between">
+                <span>${p.neighborhood}</span>
+                <span class="text-cyan font-bold">${p.price}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function filterExplorePlaces() { renderExplorePlaces(); }
+    function setExploreCategory(cat) {
+      currentExploreCategory = cat;
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        btn.classList.remove('bg-cyan', 'text-navy-950');
+        btn.classList.add('bg-slate-900', 'text-slate-300');
+      });
+      event.target.classList.add('bg-cyan', 'text-navy-950');
+      event.target.classList.remove('bg-slate-900', 'text-slate-300');
+      renderExplorePlaces();
+    }
+
+    function renderSafetyFeed() {
+      const list = document.getElementById('safety-reports-list');
+      const allContainer = document.getElementById('all-reports-container');
+      list.innerHTML = '';
+      if (allContainer) allContainer.innerHTML = '';
+      SEED_REPORTS.forEach(r => {
+        const item = `
+          <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-3 space-y-1.5 text-xs">
+            <div class="flex justify-between text-[10px] font-mono font-bold text-amber-400 uppercase">
+              <span>${r.category}</span>
+              <span class="text-emerald-400">✓ ${r.status}</span>
+            </div>
+            <div class="font-bold text-white">${r.title}</div>
+            <p class="text-slate-300 text-[11px]">${r.desc}</p>
+            <div class="text-[10px] text-slate-400">${r.neighborhood}</div>
+          </div>
+        `;
+        list.innerHTML += item;
+        if (allContainer) allContainer.innerHTML += item;
+      });
+    }
+
+    function submitDemoReport() {
+      const title = document.getElementById('rep-title').value;
+      const desc = document.getElementById('rep-desc').value;
+      const cat = document.getElementById('rep-cat').value;
+      const sev = document.getElementById('rep-sev').value;
+      if (!title || !desc) { alert('Please enter report title and description.'); return; }
+      SEED_REPORTS.unshift({
+        id: 'rep-' + Date.now(),
+        title,
+        desc,
+        category: cat,
+        severity: sev,
+        neighborhood: 'Central Pune',
+        lat: 18.5204 + (Math.random() - 0.5) * 0.02,
+        lng: 73.8567 + (Math.random() - 0.5) * 0.02,
+        status: 'pending'
+      });
+      alert('Report submitted! Marked as Pending Moderation.');
+      document.getElementById('rep-title').value = '';
+      document.getElementById('rep-desc').value = '';
+      renderSafetyFeed();
+    }
+
+    function toggleCopilot(open) {
+      document.getElementById('copilot-modal').classList.toggle('hidden', !open);
+    }
+
+    function sendCopilotMsg() {
+      const input = document.getElementById('copilot-input');
+      const val = input.value.trim();
+      if (!val) return;
+      const chat = document.getElementById('copilot-chat');
+      chat.innerHTML += `<div class="p-2.5 rounded-xl bg-cyan text-navy-950 font-medium self-end ml-auto max-w-[80%]">${val}</div>`;
+      input.value = '';
+      setTimeout(() => {
+        let reply = "I found 3 great spots in Pune matching your request! Check out **Shaniwar Wada** for heritage, **Cafe Vaishali** on FC Road, or **Vohuman Cafe** for breakfast.";
+        if (val.toLowerCase().includes('safe') || val.toLowerCase().includes('hazard')) {
+          reply = "🛡️ **Safety Summary**: We have 6 active citizen reports in Pune including a pothole alert at Swargate underpass and lighting issues in Koregaon Park Lane 5-7.";
+        } else if (val.toLowerCase().includes('tour') || val.toLowerCase().includes('heritage')) {
+          reply = "🏛️ **Peshwa Tour**: Start at Shaniwar Wada at 08:30 AM, walk to Lal Mahal, and finish at Pataleshwar Cave Temple on JM Road!";
+        }
+        chat.innerHTML += `<div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 max-w-[85%]">${reply}</div>`;
+        chat.scrollTop = chat.scrollHeight;
+      }, 500);
+    }
+
+    window.onload = () => {
+      lucide.createIcons();
+      initMaps();
+      renderExplorePlaces();
+      renderSafetyFeed();
+    };
+  </script>
+</body>
+</html>
